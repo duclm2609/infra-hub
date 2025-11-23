@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,109 +31,64 @@ import {
   Settings,
   Network,
   Heart,
+  ExternalLink,
 } from "lucide-react";
+import { useServiceStore } from "@/store/serviceStore";
+import type { LifecycleStage } from "@/types/service";
 
 interface ServiceDetailProps {
   serviceId: number;
   onBack: () => void;
 }
 
-// Mock service data - in real app this would come from API
-const getServiceById = (id: number) => {
-  const services = [
-    {
-      id: 1,
-      name: "User Service",
-      description:
-        "Service quản lý thông tin người dùng, xác thực và phân quyền. Cung cấp API cho các service khác để truy vấn thông tin user.",
-      language: "TypeScript",
-      version: "1.2.3",
-      status: "healthy",
-      lastDeployed: "2024-01-15",
-      lifecycle: "Production",
-      repository: "https://github.com/company/user-service",
-      developer: "Nguyễn Văn A",
-      team: "Backend Team",
-      businessDomain: "User Management, Authentication",
-      ciCdPipeline: "GitHub Actions",
-      pipelineStatus: "success",
-      lastPipelineRun: "2024-01-15 10:30 AM",
-      environment: "Production",
-      healthCheck: "Passing",
-      uptime: "99.9%",
-      endpoints: 12,
-      product: "Core Platform",
-      framework: "Express",
-      tier: "Tier 1",
-      tags: ["db: postgresql", "api-version: v1", "auth: jwt"],
-      repositories: [
-        {
-          name: "User Service Code",
-          type: "github",
-          url: "https://github.com/company/user-service",
-        },
-      ],
-      aliases: ["user_service", "UserService", "user"],
-    },
-    {
-      id: 2,
-      name: "Payment Service",
-      description:
-        "Service xử lý các giao dịch thanh toán, tích hợp với các cổng thanh toán bên thứ ba. Đảm bảo bảo mật và tuân thủ PCI DSS.",
-      language: "Java",
-      version: "2.1.0",
-      status: "healthy",
-      lastDeployed: "2024-01-14",
-      lifecycle: "Production",
-      repository: "https://github.com/company/payment-service",
-      developer: "Trần Thị B",
-      team: "Payment Team",
-      businessDomain: "Payment Processing, Financial Transactions",
-      ciCdPipeline: "Jenkins",
-      pipelineStatus: "success",
-      lastPipelineRun: "2024-01-14 09:15 AM",
-      environment: "Production",
-      healthCheck: "Passing",
-      uptime: "99.8%",
-      endpoints: 8,
-      product: "Payment Platform",
-      framework: "Spring Boot",
-      tier: "Tier 1",
-      tags: ["db: mysql", "payment-gateway: stripe", "security-tier: 1"],
-      repositories: [
-        {
-          name: "Payment Service Code",
-          type: "github",
-          url: "https://github.com/company/payment-service",
-        },
-      ],
-      aliases: ["payment_service", "PaymentService", "payment"],
-    },
-  ];
-
-  return services.find((s) => s.id === id) || services[0];
-};
-
 export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
+  const { getServiceById, updateService } = useServiceStore();
   const service = getServiceById(serviceId);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Initialize form data when service changes
   const [formData, setFormData] = useState({
-    name: service.name,
-    description: service.description,
-    language: service.language,
-    version: service.version,
-    lifecycle: service.lifecycle,
-    developer: service.developer,
-    team: service.team,
-    businessDomain: service.businessDomain,
+    name: "",
+    description: "",
+    language: "",
+    version: "",
+    lifecycle: "Development",
+    developer: "",
+    team: "",
+    businessDomain: "",
   });
 
-  // onBack is handled by Dashboard header
-  void onBack;
+  useEffect(() => {
+    if (service) {
+      setFormData({
+        name: service.name,
+        description: service.description,
+        language: service.language,
+        version: service.version,
+        lifecycle: service.lifecycle,
+        developer: service.developer,
+        team: service.team,
+        businessDomain: service.businessDomain || "",
+      });
+    }
+  }, [service]);
+
+  if (!service) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6">
+        <h2 className="text-xl font-bold">Service not found</h2>
+        <Button variant="link" onClick={onBack}>
+          Back to Catalog
+        </Button>
+      </div>
+    );
+  }
 
   const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log("Saving service:", formData);
+    updateService(serviceId, {
+      ...formData,
+      lifecycle: formData.lifecycle as LifecycleStage,
+    });
     setIsEditDialogOpen(false);
   };
 
@@ -231,6 +186,7 @@ export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
                           <SelectItem value="Java">Java</SelectItem>
                           <SelectItem value="Python">Python</SelectItem>
                           <SelectItem value="Go">Go</SelectItem>
+                          <SelectItem value="C#">C#</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -357,7 +313,9 @@ export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
                           <p className="text-sm text-muted-foreground mb-1">
                             Product
                           </p>
-                          <p className="font-medium">{service.product}</p>
+                          <p className="font-medium">
+                            {service.product || "N/A"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">
@@ -380,13 +338,15 @@ export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
                           <p className="text-sm text-muted-foreground mb-1">
                             Framework
                           </p>
-                          <p className="font-medium">{service.framework}</p>
+                          <p className="font-medium">
+                            {service.framework || "N/A"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">
                             Tier
                           </p>
-                          <p className="font-medium">{service.tier}</p>
+                          <p className="font-medium">{service.tier || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">
@@ -432,6 +392,51 @@ export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
 
                 {/* Right Column */}
                 <div className="space-y-6">
+                  {/* External Links */}
+                  <Card className="rounded-md">
+                    <CardHeader>
+                      <CardTitle>External Links</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          <span>Jenkins Pipeline</span>
+                        </div>
+                        <a
+                          href="#"
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          View
+                        </a>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground" />
+                          <span>Grafana Dashboard</span>
+                        </div>
+                        <a
+                          href="#"
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          View
+                        </a>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>API Documentation</span>
+                        </div>
+                        <a
+                          href="#"
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          View
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Repositories */}
                   <Card className="rounded-md">
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -540,15 +545,17 @@ export function ServiceDetail({ serviceId, onBack }: ServiceDetailProps) {
                       <p className="text-sm text-muted-foreground">
                         Health Check
                       </p>
-                      <p className="font-medium">{service.healthCheck}</p>
+                      <p className="font-medium">
+                        {service.healthCheck || "Unknown"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Uptime</p>
-                      <p className="font-medium">{service.uptime}</p>
+                      <p className="font-medium">{service.uptime || "0%"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Endpoints</p>
-                      <p className="font-medium">{service.endpoints}</p>
+                      <p className="font-medium">{service.endpoints || 0}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">
