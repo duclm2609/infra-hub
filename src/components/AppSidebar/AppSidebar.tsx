@@ -10,7 +10,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Settings, FileText, Users, BarChart3, Home } from "lucide-react";
+import {
+  Settings,
+  FileText,
+  Users,
+  BarChart3,
+  Home,
+  LogOut,
+} from "lucide-react";
+import { useMsal } from "@azure/msal-react";
+import { useAuthStore } from "@/store/authStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type View = "home" | "services-catalog" | "documents" | "users" | "settings";
 
@@ -20,6 +35,9 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
+  const { instance } = useMsal();
+  const { user, logout } = useAuthStore();
+
   const menuItems = [
     {
       title: "Home",
@@ -52,6 +70,32 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
     if (onViewChange) {
       onViewChange(view);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      logout(); // Clear store
+      await instance.logoutRedirect({
+        postLogoutRedirectUri: window.location.origin + "/login",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Get user initials for avatar
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      const parts = name.split(" ");
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+    if (email) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return "U";
   };
 
   return (
@@ -97,17 +141,34 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <span className="text-xs font-semibold">TC</span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Tài khoản</span>
-                  <span className="truncate text-xs">user@tcbs.com</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="lg" className="cursor-pointer">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                    <span className="text-xs font-semibold">
+                      {getInitials(user?.name, user?.email)}
+                    </span>
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {user?.name || "User"}
+                    </span>
+                    <span className="truncate text-xs text-slate-500">
+                      {user?.email || "No email"}
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="end" className="w-56">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Đăng xuất</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
