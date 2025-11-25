@@ -38,42 +38,75 @@ function AppContent() {
   const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
   const { instance } = useMsal();
-  const { setAuthenticated, setUser } = useAuthStore();
+  const { setAuthenticated, setUser, user } = useAuthStore();
 
   useEffect(() => {
     // Check auth status whenever route changes
-    const accounts = instance.getAllAccounts();
-    console.log("📍 Current path:", window.location.pathname);
-    console.log("👤 Accounts found:", accounts.length);
+    const fetchUserData = async () => {
+      const accounts = instance.getAllAccounts();
+      console.log("📍 Current path:", window.location.pathname);
+      console.log("👤 Accounts found:", accounts.length);
 
-    if (accounts.length > 0) {
-      const account = accounts[0];
-      console.log("✅ User is authenticated:", account.username);
+      if (accounts.length > 0) {
+        const account = accounts[0];
+        console.log("✅ User is authenticated:", account.username);
 
-      // Update store
-      setUser({
-        name: account.name,
-        email: account.username,
-      });
-      setAuthenticated(true);
+        // Only fetch avatar if not already in store
+        let avatarUrl = user?.avatar;
+        
+        if (!avatarUrl) {
+          try {
+            const tokenResponse = await instance.acquireTokenSilent({
+              scopes: ["User.Read"],
+              account: account,
+            });
 
-      // Auto redirect to catalog if on login page
-      const currentPath = window.location.pathname;
-      if (
-        currentPath === "/login" ||
-        currentPath === "/" ||
-        currentPath === "/auth/callback"
-      ) {
-        console.log("🔄 Redirecting to /catalog");
-        setTimeout(() => {
-          navigate("/catalog", { replace: true });
-        }, 100);
+            const response = await fetch(
+              "https://graph.microsoft.com/v1.0/me/photo/$value",
+              {
+                headers: {
+                  Authorization: `Bearer ${tokenResponse.accessToken}`,
+                },
+              }
+            );
+
+            if (response.ok) {
+              const blob = await response.blob();
+              avatarUrl = URL.createObjectURL(blob);
+            }
+          } catch (error) {
+            console.log("Could not fetch user photo:", error);
+          }
+        }
+
+        // Update store
+        setUser({
+          name: account.name,
+          email: account.username,
+          avatar: avatarUrl,
+        });
+        setAuthenticated(true);
+
+        // Auto redirect to catalog if on login page
+        const currentPath = window.location.pathname;
+        if (
+          currentPath === "/login" ||
+          currentPath === "/" ||
+          currentPath === "/auth/callback"
+        ) {
+          console.log("🔄 Redirecting to /catalog");
+          setTimeout(() => {
+            navigate("/catalog", { replace: true });
+          }, 100);
+        }
+      } else {
+        console.log("❌ No user authenticated");
+        setAuthenticated(false);
       }
-    } else {
-      console.log("❌ No user authenticated");
-      setAuthenticated(false);
-    }
-  }, [isAuthenticated, instance, navigate, setAuthenticated, setUser]);
+    };
+
+    fetchUserData();
+  }, [isAuthenticated, instance, navigate, setAuthenticated, setUser, user?.avatar]);
 
   return (
     <Routes>

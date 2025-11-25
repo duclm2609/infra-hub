@@ -28,17 +28,51 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     // Sync store with MSAL state after initial check
-    const accounts = instance.getAllAccounts();
-    if (accounts.length > 0) {
-      const account = accounts[0];
-      setUser({
-        name: account.name,
-        email: account.username,
-      });
-      setAuthenticated(true);
-    } else {
-      setAuthenticated(false);
-    }
+    const fetchUserAvatar = async () => {
+      const accounts = instance.getAllAccounts();
+      if (accounts.length > 0) {
+        const account = accounts[0];
+        
+        let avatarUrl: string | undefined;
+        
+        try {
+          // Get access token for Microsoft Graph
+          const tokenResponse = await instance.acquireTokenSilent({
+            scopes: ["User.Read"],
+            account: account,
+          });
+
+          // Fetch user photo from Microsoft Graph
+          const response = await fetch(
+            "https://graph.microsoft.com/v1.0/me/photo/$value",
+            {
+              headers: {
+                Authorization: `Bearer ${tokenResponse.accessToken}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const blob = await response.blob();
+            avatarUrl = URL.createObjectURL(blob);
+          }
+        } catch (error) {
+          console.log("Could not fetch user photo:", error);
+          // Continue without avatar - will show initials
+        }
+
+        setUser({
+          name: account.name,
+          email: account.username,
+          avatar: avatarUrl,
+        });
+        setAuthenticated(true);
+      } else {
+        setAuthenticated(false);
+      }
+    };
+
+    fetchUserAvatar();
   }, [instance, setAuthenticated, setUser]);
 
   // Use MSAL's authentication status as the primary source of truth

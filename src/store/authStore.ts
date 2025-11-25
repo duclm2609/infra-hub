@@ -7,11 +7,14 @@ interface AuthState {
   user: {
     name?: string;
     email?: string;
+    avatar?: string;
   } | null;
   setAuthenticated: (authenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setUser: (user: { name?: string; email?: string } | null) => void;
+  setUser: (
+    user: { name?: string; email?: string; avatar?: string } | null
+  ) => void;
   logout: () => void;
 }
 

@@ -232,12 +232,20 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="h-auto cursor-pointer focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/80 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-slate-700 transition-all rounded-md !p-2">
-                  <div className="flex aspect-square size-9 items-center justify-center rounded-md bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm">
-                    <span className="text-xs font-bold">
-                      {getInitials(user?.name, user?.email)}
-                    </span>
+                  <div className="flex aspect-square size-9 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm overflow-hidden">
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name || "Avatar"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-bold leading-none tracking-tight">
+                        {getInitials(user?.name, user?.email)}
+                      </span>
+                    )}
                   </div>
-                  <div className="grid flex-1 text-left text-xs leading-tight">
+                  <div className="grid flex-1 min-w-0 text-left text-xs leading-tight">
                     <span className="truncate font-semibold text-foreground">
                       {user?.name || "User"}
                     </span>
