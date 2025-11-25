@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,14 +10,20 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import {
   Settings,
   FileText,
   Users,
-  BarChart3,
+  Package,
   Home,
   LogOut,
+  ChevronUp,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useMsal } from "@azure/msal-react";
 import { useAuthStore } from "@/store/authStore";
@@ -27,7 +34,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type View = "home" | "services-catalog" | "documents" | "users" | "settings";
+type View =
+  | "home"
+  | "services-catalog"
+  | "certificate"
+  | "device"
+  | "documents"
+  | "users"
+  | "settings";
 
 interface AppSidebarProps {
   onViewChange?: (view: View) => void;
@@ -37,18 +51,9 @@ interface AppSidebarProps {
 export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
   const { instance } = useMsal();
   const { user, logout } = useAuthStore();
+  const [isInventoryExpanded, setIsInventoryExpanded] = useState(true);
 
   const menuItems = [
-    {
-      title: "Home",
-      icon: Home,
-      view: "home" as View,
-    },
-    {
-      title: "Services Catalog",
-      icon: BarChart3,
-      view: "services-catalog" as View,
-    },
     {
       title: "Documents",
       icon: FileText,
@@ -63,6 +68,21 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
       title: "Settings",
       icon: Settings,
       view: "settings" as View,
+    },
+  ];
+
+  const inventorySubmenu = [
+    {
+      title: "Service Catalog",
+      view: "services-catalog" as View,
+    },
+    {
+      title: "Certificate",
+      view: "certificate" as View,
+    },
+    {
+      title: "Device",
+      view: "device" as View,
     },
   ];
 
@@ -123,11 +143,79 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Home Menu Item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => handleMenuItemClick("home")}
+                  isActive={currentView === "home"}
+                  className={
+                    currentView === "home"
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white [&[data-active=true]]:bg-indigo-600 [&[data-active=true]]:text-white"
+                      : "text-foreground"
+                  }
+                >
+                  <Home />
+                  <span>Home</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Inventory with Submenu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setIsInventoryExpanded(!isInventoryExpanded)}
+                  isActive={[
+                    "services-catalog",
+                    "certificate",
+                    "device",
+                  ].includes(currentView || "")}
+                  className={
+                    ["services-catalog", "certificate", "device"].includes(
+                      currentView || ""
+                    )
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white [&[data-active=true]]:bg-indigo-600 [&[data-active=true]]:text-white"
+                      : "text-foreground"
+                  }
+                >
+                  <Package />
+                  <span>Inventory</span>
+                  <ChevronRight
+                    className={`ml-auto size-4 transition-transform ${
+                      isInventoryExpanded ? "rotate-90" : ""
+                    }`}
+                  />
+                </SidebarMenuButton>
+                {isInventoryExpanded && (
+                  <SidebarMenuSub>
+                    {inventorySubmenu.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton
+                          onClick={() => handleMenuItemClick(subItem.view)}
+                          isActive={currentView === subItem.view}
+                          className={
+                            currentView === subItem.view
+                              ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:text-indigo-800 [&[data-active=true]]:bg-indigo-100"
+                              : ""
+                          }
+                        >
+                          <span>{subItem.title}</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+
+              {/* Other Menu Items */}
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => handleMenuItemClick(item.view)}
                     isActive={currentView === item.view}
+                    className={
+                      currentView === item.view
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white [&[data-active=true]]:bg-indigo-600 [&[data-active=true]]:text-white"
+                        : ""
+                    }
                   >
                     <item.icon />
                     <span>{item.title}</span>
@@ -141,21 +229,25 @@ export function AppSidebar({ onViewChange, currentView }: AppSidebarProps) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg" className="cursor-pointer">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
-                    <span className="text-xs font-semibold">
+                <SidebarMenuButton className="h-auto cursor-pointer focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/80 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-slate-700 transition-all rounded-md !p-2">
+                  <div className="flex aspect-square size-9 items-center justify-center rounded-md bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm">
+                    <span className="text-xs font-bold">
                       {getInitials(user?.name, user?.email)}
                     </span>
                   </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
+                  <div className="grid flex-1 text-left text-xs leading-tight">
+                    <span className="truncate font-semibold text-foreground">
                       {user?.name || "User"}
                     </span>
-                    <span className="truncate text-xs text-slate-500">
+                    <span className="truncate text-[11px] text-muted-foreground">
                       {user?.email || "No email"}
                     </span>
+                  </div>
+                  <div className="ml-auto flex flex-col items-center justify-center">
+                    <ChevronUp className="size-3 text-muted-foreground" />
+                    <ChevronDown className="size-3 text-muted-foreground" />
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>

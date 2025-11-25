@@ -44,6 +44,8 @@ type View =
   | "home"
   | "services-catalog"
   | "service-detail"
+  | "certificate"
+  | "device"
   | "documents"
   | "users"
   | "settings";
@@ -84,6 +86,41 @@ export function Dashboard({ onLogout }: DashboardProps) {
         );
       case "services-catalog":
         return <ServiceCatalog onServiceClick={handleServiceClick} />;
+      case "certificate":
+      case "device":
+      case "documents":
+      case "users":
+      case "settings":
+        return (
+          <div className="flex flex-1 items-center justify-center p-8">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900/20">
+                <svg
+                  className="w-10 h-10 text-indigo-600 dark:text-indigo-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Coming Soon
+                </h2>
+                <p className="text-muted-foreground max-w-md">
+                  Tính năng này đang được phát triển và sẽ sớm có mặt. Vui lòng
+                  quay lại sau.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
       case "home":
       default:
         return (
@@ -125,10 +162,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
     switch (currentView) {
       case "service-detail": {
         const serviceName = getServiceName(selectedServiceId);
-        return serviceName ? `Services / ${serviceName}` : "Service Detail";
+        return serviceName
+          ? `Inventory / Service Catalog / ${serviceName}`
+          : "Service Detail";
       }
       case "services-catalog":
-        return "Services Catalog";
+        return "Inventory / Service Catalog";
+      case "certificate":
+        return "Inventory / Certificate";
+      case "device":
+        return "Inventory / Device";
+      case "documents":
+        return "Documents";
+      case "users":
+        return "Users";
+      case "settings":
+        return "Settings";
       case "home":
       default:
         return "Dashboard";
